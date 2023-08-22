@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+   <link rel="stylesheet" href="/divFconf2023/libs/highlight/styles/github.min.css">
+   
+  <link rel="stylesheet" href="/divFconf2023/css/jtd.css">
+<link rel="icon" href="/divFconf2023/assets/favicon.ico">
+
+<style>
+  /* #148 wrap long header */
+  .franklin-content a.header-anchor,
+  .franklin-toc li a
+   {
+    word-wrap: break-word;
+    white-space: normal;
+  }
+</style>
+
+   <title>Menu 3</title>  
+</head>
+<body>                      
+<div class="page-wrap">   
+  
+  <div class="side-bar">
+    <div class="header">
+      <a href="/divFconf2023/" class="title">
+          <img src="/divFconf2023/assets/logo.jpg" alt="logo" width="156">
+      </a>
+    </div>
+    <label for="show-menu" class="show-menu">MENU</label>
+    <input type="checkbox" id="show-menu" role="button">
+    <div class="menu" id="side-menu">
+      <ul class="menu-list">
+        <li class="menu-list-item "><a href="/divFconf2023/" class="menu-list-link ">Home</a>
+        <li class="menu-list-item "><a href="/divFconf2023/programme/" class="menu-list-link ">Programme</a>
+        <li class="menu-list-item "><a href="/divFconf2023/speakers/" class="menu-list-link ">Speakers</a>
+        <li class="menu-list-item active"><a href="/divFconf2023/posters/" class="menu-list-link active">Posters</a>
+        <li class="menu-list-item"><a href="https://forms.gle/Z8UWiaxHd4GCfAAy8" class="menu-list-link ">Register</a>
+          <ul class="menu-list-child-list ">
+            <li class="menu-list-item "><a href="#" class="menu-list-link">Submenu</a>
+          </ul>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="main-content-wrap"> 
+    <div class="main-content">    
+        <div class="main-header">
+          <div class="title">
+              2023 Division F Conference
+              
+          </div>
+        </div>
+
+
+
+
+<div class="franklin-content" >
+  <h1 id="working_with_tags" ><a href="#working_with_tags"> Working with tags</a></h1><p><strong>Example</strong>:</p>
+<ul>
+<li>page with tag <a href="/divFconf2023/tag/syntax/"><code>syntax</code></a></li>
+<li>page with tag <a href="/divFconf2023/tag/image/"><code>image</code></a></li>
+<li>page with tag <a href="/divFconf2023/tag/code/"><code>code</code></a></li>
+</ul>
+<div class="toc"><ol><li><a href="#indicating_tags">Indicating tags</a></li><li><a href="#customising_tag_pages">Customising tag pages</a></li><li><a href="#customising_tag_lists">Customising tag lists</a></li></ol></div><h2 id="indicating_tags" ><a href="#indicating_tags"> Indicating tags</a></h2><p>To mark a page with tags, add:</p>
+<pre><code class="markdown">+++
+tags = [&quot;tag1&quot;, &quot;tag2&quot;]
++++</code></pre>
+<p>then that page, along with all others that have the tag <code>tag1</code> will be listed at <code>/tag/tag1/</code>.</p>
+<h2 id="customising_tag_pages" ><a href="#customising_tag_pages"> Customising tag pages</a></h2><p>You can change how a <code>/tag/...</code> page looks like by modifying the <code>_layout/tag.html</code>. An important note is that you can <strong>only</strong> use <strong>global</strong> page variables (defined in <code>config.md</code>).</p>
+<p>There are three "exceptions":</p>
+<ol>
+<li>you can still use <code>&lbrace;&lbrace;ispage /tag/tagname/&rbrace;&rbrace; ... &lbrace;&lbrace;end&rbrace;&rbrace;</code> (or <code>&lbrace;&lbrace;isnotpage ...&rbrace;&rbrace;</code>) to have a different layout depending on the tag,</li>
+<li>you can use the <code>fd_tag</code> variable which contains the  name of the tag so <code>&lbrace;&lbrace;fill fd_tag&rbrace;&rbrace;</code> will input the tag string as is,</li>
+<li>you can use <code>&lbrace;&lbrace;fill varname path/to/page&rbrace;&rbrace;</code> to exploit a page variable defined in a specific page.</li>
+</ol>
+<h2 id="customising_tag_lists" ><a href="#customising_tag_lists"> Customising tag lists</a></h2><p>By default the tag list is very simple: it just collects all pages that match the tags and it shows them in a simple list by anti-chronological order (more recent at the top).</p>
+<p>You can customise this by defining your own <code>hfun_custom_taglist</code> function in the <code>utils.jl</code> file. The commented blueprint for the simple default setting is below and should give you an idea of how to  write your own generator.</p>
+<p>Assuming you've defined such a function, don't forget to use <code>&lbrace;&lbrace;custom_taglist&rbrace;&rbrace;</code> in the <code>_layout/tag.html</code> instead of the default <code>&lbrace;&lbrace;taglist&rbrace;&rbrace;</code>.</p>
+<pre><code class="julia">function hfun_custom_taglist()::String
+    # -----------------------------------------
+    # Part1: Retrieve all pages associated with
+    #  the tag &amp; sort them
+    # -----------------------------------------
+    # retrieve the tag string
+    tag = locvar(:fd_tag)
+    # recover the relative paths to all pages that have that
+    # tag, these are paths like /blog/page1
+    rpaths = globvar(&quot;fd_tag_pages&quot;)[tag]
+    # you might want to sort these pages by chronological order
+    # you could also only show the most recent 5 etc...
+    sorter(p) = begin
+        # retrieve the &quot;date&quot; field of the page if defined, otherwise
+        # use the date of creation of the file
+        pvd = pagevar(p, :date)
+        if isnothing(pvd)
+            return Date(Dates.unix2datetime(stat(p * &quot;.md&quot;).ctime))
+        end
+        return pvd
+    end
+    sort!(rpaths, by=sorter, rev=true)
+
+    # --------------------------------
+    # Part2: Write the HTML to plug in
+    # --------------------------------
+    # instantiate a buffer in which we will write the HTML
+    # to plug in the tag page
+    c = IOBuffer()
+    write(c, &quot;...1...&quot;)
+    # go over all paths
+    for rpath in rpaths
+        # recover the url corresponding to the rpath
+        url = get_url(rpath)
+        # recover the title of the page if there is one defined,
+        # if there isn't, fallback on the path to the page
+        title = pagevar(rpath, &quot;title&quot;)
+        if isnothing(title)
+            title = &quot;/$rpath/&quot;
+        end
+        # write some appropriate HTML
+        write(c, &quot;...2...&quot;)
+    end
+    # finish the HTML
+    write(c, &quot;...3...&quot;)
+    # return the HTML string
+    return String(take!(c))
+end</code></pre>
+<p>For instance the default uses:</p>
+<pre><code class="html">&lt;!-- 1, 3: simple list--&gt;
+&lt;ul&gt;...&lt;/ul&gt;
+&lt;!-- 2: simple list item plugging in path + title --&gt;
+&lt;li&gt;&lt;a href=&quot;/$rpath/&quot;&gt;$title&lt;/a&gt;&lt;/li&gt;</code></pre>
+
+  <div class="page-foot">
+</div>
+
+</div>
+
+    </div> 
+    </div> 
+    </div> 
+    
+    
+      <script src="/divFconf2023/libs/highlight/highlight.min.js"></script>
+<script>hljs.highlightAll();hljs.configure({tabReplace: '    '});</script>
+
+    
+  </body>
+</html>
